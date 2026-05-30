@@ -17,6 +17,7 @@ export const router = createBrowserRouter([
 			{ index: true, element: withSuspense(lazy(() => import("@/pages/login/LoginPage"))) },
 			{ path: "login", element: withSuspense(lazy(() => import("@/pages/login/LoginPage"))) },
 			{ path: "register", element: withSuspense(lazy(() => import("@/pages/register/RegisterPage"))) },
+			{ path: "verify", element: withSuspense(lazy(() => import("@/pages/verify/VerifyPage"))) },
 			{ path: "*", element: <NotFound /> },
 		],
 	},
