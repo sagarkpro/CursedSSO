@@ -1,42 +1,95 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, MailCheck, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 import { OtpInput } from "@/components/shared/OtpInput";
 import { Button } from "@/components/ui/Button";
+import { useVerifyOtp } from "@/hooks/useVerifyOtp";
+import { getErrorMessage } from "@/utils/api";
+import { clearPendingVerificationEmail, getPendingVerificationEmail, saveAccessToken } from "@/utils/authStorage";
+import { otpSchema } from "@/utils/validation";
 
 const RESEND_SECONDS = 30;
 
 export default function VerifyPage() {
+	const navigate = useNavigate();
+	const [email] = useState(() => getPendingVerificationEmail());
 	const [code, setCode] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
+	const submittingRef = useRef(false);
+	const { mutate: verifyOtp, isPending } = useVerifyOtp();
+
+	useEffect(() => {
+		if (!email) {
+			navigate("/register", {
+				replace: true,
+			});
+		}
+	}, [email, navigate]);
+
 	useEffect(() => {
 		if (secondsLeft <= 0) return;
 		const t = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
 		return () => clearInterval(t);
 	}, [secondsLeft]);
-	const handleVerify = (e?: React.FormEvent) => {
-		e?.preventDefault();
-		if (code.length !== 6) {
-			setError("Please enter all 6 characters of the code.");
-			return;
-		}
-		setIsLoading(true);
-		setError(null);
-		setTimeout(() => {
-			setIsLoading(false);
-			// Demo: show error so the error state is visible
-			setError("That code didn't match. Double-check and try again.");
-		}, 1500);
+
+	const submitCode = useCallback(
+		(otp: string) => {
+			if (!email || submittingRef.current) return;
+
+			const parsed = otpSchema.safeParse({
+				otp,
+			});
+			if (!parsed.success) {
+				setError(parsed.error.issues[0]?.message || "Enter the complete 6-character code.");
+				return;
+			}
+
+			submittingRef.current = true;
+			setError(null);
+			verifyOtp(
+				{
+					email,
+					otp: parsed.data.otp,
+				},
+				{
+					onSuccess: ({ accessToken }) => {
+						saveAccessToken(accessToken);
+						clearPendingVerificationEmail();
+						toast.success("OTP verified successfully");
+					},
+					onError: (mutationError) => {
+						const message = getErrorMessage(mutationError);
+						setError(message);
+						toast.error(message);
+					},
+					onSettled: () => {
+						submittingRef.current = false;
+					},
+				},
+			);
+		},
+		[email, verifyOtp],
+	);
+
+	const handleVerify = (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		submitCode(code);
 	};
+
 	const handleResend = () => {
 		if (secondsLeft > 0) return;
 		setCode("");
 		setError(null);
 		setSecondsLeft(RESEND_SECONDS);
 	};
+
+	if (!email) {
+		return null;
+	}
+
 	return (
 		<div>
 			<div className="flex flex-col space-y-6">
@@ -49,7 +102,7 @@ export default function VerifyPage() {
 					<div className="space-y-1.5">
 						<h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">Check your email</h1>
 						<p className="text-sm text-neutral-400">
-							We sent a 6-character code to <span className="text-neutral-200 font-medium">you@example.com</span>. Paste or type it below.
+							We sent a 6-character code to <span className="text-neutral-200 font-medium">{email}</span>. Paste or type it below.
 						</p>
 					</div>
 				</div>
@@ -83,15 +136,13 @@ export default function VerifyPage() {
 				<form onSubmit={handleVerify} className="flex flex-col space-y-5">
 					<OtpInput
 						value={code}
-						onChange={(v) => {
-							setCode(v);
+						onChange={(value) => {
+							setCode(value);
 							if (error) setError(null);
 						}}
-						onComplete={() => {
-							// Auto-submit on complete for a snappier feel
-							setTimeout(() => handleVerify(), 150);
-						}}
+						onComplete={submitCode}
 						error={Boolean(error)}
+						disabled={isPending}
 					/>
 
 					<div className="flex items-center justify-center text-xs text-neutral-500">
@@ -106,14 +157,18 @@ export default function VerifyPage() {
 						)}
 					</div>
 
-					<Button type="submit" className="w-full" isLoading={isLoading} disabled={code.length !== 6}>
-						{isLoading ? "Verifying…" : "Verify and continue"}
+					<Button type="submit" className="w-full" isLoading={isPending} disabled={code.length !== 6}>
+						{isPending ? "Verifying..." : "Verify and continue"}
 					</Button>
 				</form>
 
 				<div className="flex items-center justify-center gap-1.5 text-sm text-neutral-400 pt-2">
 					<ArrowLeft className="w-3.5 h-3.5" />
-					<Link to="/login" className="font-medium text-foreground hover:text-rose-300 transition-colors underline decoration-white/20 hover:decoration-rose-300/50 underline-offset-4">
+					<Link
+						to="/register"
+						onClick={clearPendingVerificationEmail}
+						className="font-medium text-foreground hover:text-rose-300 transition-colors underline decoration-white/20 hover:decoration-rose-300/50 underline-offset-4"
+					>
 						Use a different email
 					</Link>
 				</div>

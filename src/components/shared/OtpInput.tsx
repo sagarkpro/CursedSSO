@@ -7,10 +7,12 @@ interface OtpInputProps {
 	onComplete?: (value: string) => void;
 	error?: boolean;
 	autoFocus?: boolean;
+	disabled?: boolean;
 }
 const ALPHANUMERIC = /^[A-Z0-9]$/;
-export function OtpInput({ length = 6, value, onChange, onComplete, error = false, autoFocus = true }: OtpInputProps) {
+export function OtpInput({ length = 6, value, onChange, onComplete, error = false, autoFocus = true, disabled = false }: OtpInputProps) {
 	const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+	const completedValueRef = useRef<string | null>(null);
 	const [focusedIndex, setFocusedIndex] = useState<number | null>(autoFocus ? 0 : null);
 	// Normalize value to array of chars, padded with empty strings
 	const chars = Array.from(
@@ -25,7 +27,13 @@ export function OtpInput({ length = 6, value, onChange, onComplete, error = fals
 		}
 	}, [autoFocus]);
 	useEffect(() => {
-		if (value.length === length && onComplete) {
+		if (value.length !== length) {
+			completedValueRef.current = null;
+			return;
+		}
+
+		if (onComplete && completedValueRef.current !== value) {
+			completedValueRef.current = value;
 			onComplete(value);
 		}
 	}, [value, length, onComplete]);
@@ -119,6 +127,7 @@ export function OtpInput({ length = 6, value, onChange, onComplete, error = fals
 						inputMode="text"
 						autoComplete={i === 0 ? "one-time-code" : "off"}
 						maxLength={1}
+						disabled={disabled}
 						value={char}
 						onChange={(e) => handleChange(i, e.target.value)}
 						onKeyDown={(e) => handleKeyDown(i, e)}
@@ -137,6 +146,7 @@ export function OtpInput({ length = 6, value, onChange, onComplete, error = fals
 							filled && "border-white/20 bg-white/[0.06]",
 							isFocused && "border-rose-300/60 ring-4 ring-rose-300/15 bg-white/[0.06]",
 							error && "border-red-500/50 ring-red-500/10",
+							disabled && "cursor-not-allowed opacity-60",
 							"placeholder:text-neutral-700",
 						)}
 						placeholder="•"

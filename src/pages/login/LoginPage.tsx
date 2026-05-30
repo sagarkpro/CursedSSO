@@ -1,34 +1,70 @@
-import React, { useEffect, useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/Input";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { Button } from "@/components/ui/Button";
 import { SocialButtons } from "@/components/shared/SocialButtons";
+import { useLogin } from "@/hooks/useLogin";
+import { getErrorMessage } from "@/utils/api";
+import { saveAccessToken } from "@/utils/authStorage";
+import { getFieldErrors, loginSchema } from "@/utils/validation";
 
 const greetings = ["Good to see you again ✦", "Let's get you signed in", "Welcome back to the grid"];
 
+interface LoginFormValues {
+	email: string;
+	password: string;
+}
+
+type LoginFieldErrors = Partial<Record<keyof LoginFormValues, string>>;
+
 export default function LoginPage() {
-	const [isLoading, setIsLoading] = useState(false);
+	const [form, setForm] = useState<LoginFormValues>({
+		email: "",
+		password: "",
+	});
+	const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
 	const [error, setError] = useState<string | null>(null);
-	const [greetingIndex, setGreetingIndex] = useState(0);
+	const [greetingIndex] = useState(() => Math.floor(Math.random() * greetings.length));
+	const loginMutation = useLogin();
 
-	useEffect(() => {
-		setGreetingIndex(Math.floor(Math.random() * greetings.length));
-	}, []);
-
-	const handleLogin = (e: React.FormEvent) => {
-		e.preventDefault();
-		setIsLoading(true);
+	const updateField = (field: keyof LoginFormValues, value: string) => {
+		setForm((current) => ({
+			...current,
+			[field]: value,
+		}));
+		setFieldErrors((current) => ({
+			...current,
+			[field]: undefined,
+		}));
 		setError(null);
-		// Simulate network request
-		setTimeout(() => {
-			// Randomly fail sometimes for demo purposes, or just fail if we want to show the error state
-			// Let's just show an error after 1.5s to demonstrate the UI
-			setIsLoading(false);
-			setError("Invalid email or password. Please try again.");
-		}, 1500);
+	};
+
+	const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		setError(null);
+		const parsed = loginSchema.safeParse(form);
+
+		if (!parsed.success) {
+			setFieldErrors(getFieldErrors(parsed.error));
+			return;
+		}
+
+		setFieldErrors({});
+		loginMutation.mutate(parsed.data, {
+			onSuccess: ({ accessToken }) => {
+				saveAccessToken(accessToken);
+				toast.success("Logged in successfully");
+			},
+			onError: (mutationError) => {
+				const message = getErrorMessage(mutationError);
+				setError(message);
+				toast.error(message);
+			},
+		});
 	};
 
 	return (
@@ -71,7 +107,15 @@ export default function LoginPage() {
 							<label htmlFor="email" className="text-xs font-medium text-neutral-300 ml-1">
 								Email
 							</label>
-							<Input id="email" type="email" placeholder="name@example.com" required autoComplete="email" />
+							<Input
+								id="email"
+								type="email"
+								placeholder="name@example.com"
+								autoComplete="email"
+								value={form.email}
+								onChange={(event) => updateField("email", event.target.value)}
+								error={fieldErrors.email}
+							/>
 						</div>
 
 						<div className="space-y-1.5">
@@ -83,12 +127,19 @@ export default function LoginPage() {
 									Forgot password?
 								</a>
 							</div>
-							<PasswordField id="password" placeholder="••••••••" required autoComplete="current-password" />
+							<PasswordField
+								id="password"
+								placeholder="••••••••"
+								autoComplete="current-password"
+								value={form.password}
+								onChange={(event) => updateField("password", event.target.value)}
+								error={fieldErrors.password}
+							/>
 						</div>
 					</div>
 
-					<Button type="submit" className="w-full mt-2" isLoading={isLoading}>
-						{isLoading ? "Signing in..." : "Sign in"}
+					<Button type="submit" className="w-full mt-2" isLoading={loginMutation.isPending}>
+						{loginMutation.isPending ? "Signing in..." : "Sign in"}
 					</Button>
 				</form>
 

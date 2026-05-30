@@ -1,4 +1,4 @@
-import React, { useState, forwardRef } from "react";
+import { useState, forwardRef } from "react";
 import { Input, type InputProps } from "./Input";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "../../lib/utils";

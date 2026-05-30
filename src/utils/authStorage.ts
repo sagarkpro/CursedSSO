@@ -1,0 +1,18 @@
+export const ACCESS_TOKEN_KEY = "accessToken";
+export const PENDING_VERIFICATION_EMAIL_KEY = "pendingVerificationEmail";
+
+export function saveAccessToken(accessToken: string) {
+	localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+}
+
+export function savePendingVerificationEmail(email: string) {
+	sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, email);
+}
+
+export function getPendingVerificationEmail() {
+	return sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY);
+}
+
+export function clearPendingVerificationEmail() {
+	sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
+}
