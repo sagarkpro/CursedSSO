@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -8,8 +8,7 @@ import { PasswordField } from "@/components/ui/PasswordField";
 import { Button } from "@/components/ui/Button";
 import { SocialButtons } from "@/components/shared/SocialButtons";
 import { useLogin } from "@/hooks/useLogin";
-import { getErrorMessage } from "@/utils/api";
-import { saveAccessToken } from "@/utils/authStorage";
+import { ApiError, getErrorMessage } from "@/utils/api";
 import { getFieldErrors, loginSchema } from "@/utils/validation";
 
 const greetings = ["Good to see you again ✦", "Let's get you signed in", "Welcome back to the grid"];
@@ -27,9 +26,15 @@ export default function LoginPage() {
 		password: "",
 	});
 	const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
-	const [error, setError] = useState<string | null>(null);
+	const [searchParams] = useSearchParams();
+	const loginId = searchParams.get("login_id");
+	const [error, setError] = useState<string | null>(() =>
+		loginId ? null : "No active sign-in request — please start from the application.",
+	);
+	const [sessionExpired, setSessionExpired] = useState(false);
 	const [greetingIndex] = useState(() => Math.floor(Math.random() * greetings.length));
 	const loginMutation = useLogin();
+	const canSubmit = Boolean(loginId) && !sessionExpired;
 
 	const updateField = (field: keyof LoginFormValues, value: string) => {
 		setForm((current) => ({
@@ -40,11 +45,12 @@ export default function LoginPage() {
 			...current,
 			[field]: undefined,
 		}));
-		setError(null);
+		if (canSubmit) setError(null);
 	};
 
 	const handleLogin = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+		if (!loginId || sessionExpired) return;
 		setError(null);
 		const parsed = loginSchema.safeParse(form);
 
@@ -54,17 +60,26 @@ export default function LoginPage() {
 		}
 
 		setFieldErrors({});
-		loginMutation.mutate(parsed.data, {
-			onSuccess: ({ accessToken }) => {
-				saveAccessToken(accessToken);
-				toast.success("Logged in successfully");
+		loginMutation.mutate(
+			{ ...parsed.data, loginId },
+			{
+				onSuccess: ({ redirectUri }) => {
+					window.location.assign(redirectUri);
+				},
+				onError: (mutationError) => {
+					const code = mutationError instanceof ApiError ? mutationError.code : undefined;
+					if (code === "invalid_login") {
+						setSessionExpired(true);
+						setError("Your sign-in session expired — please return to the app and try again.");
+						return;
+					}
+					const message = getErrorMessage(mutationError);
+					setError(message);
+					toast.error(message);
+					setForm((current) => ({ ...current, password: "" }));
+				},
 			},
-			onError: (mutationError) => {
-				const message = getErrorMessage(mutationError);
-				setError(message);
-				toast.error(message);
-			},
-		});
+		);
 	};
 
 	return (
@@ -138,7 +153,7 @@ export default function LoginPage() {
 						</div>
 					</div>
 
-					<Button type="submit" className="w-full mt-2" isLoading={loginMutation.isPending}>
+					<Button type="submit" className="w-full mt-2" isLoading={loginMutation.isPending} disabled={!canSubmit}>
 						{loginMutation.isPending ? "Signing in..." : "Sign in"}
 					</Button>
 				</form>

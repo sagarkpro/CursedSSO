@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --mode localhost",
-    "dev:prod": "vite --mode production",
+    "dev": "vite --mode localhost --port 7704",
+    "dev:prod": "vite --mode production --port 7704",
     "build": "tsc -b && vite build",
     "build:local": "tsc -b && vite build --mode localhost",
     "build:prod": "tsc -b && vite build --mode production",

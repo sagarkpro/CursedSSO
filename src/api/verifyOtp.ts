@@ -1,9 +1,12 @@
 import { post } from "@/utils/api";
-import type { AuthTokenData } from "./login";
 
 export interface VerifyOtpRequest {
 	email: string;
 	otp: string;
+}
+
+export interface AuthTokenData {
+	accessToken: string;
 }
 
 export function verifyOtp(payload: VerifyOtpRequest) {

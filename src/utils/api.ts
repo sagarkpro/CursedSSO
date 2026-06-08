@@ -2,17 +2,20 @@ export interface ApiResponse<T> {
 	success: true;
 	data: T;
 	error?: {
+		code?: string;
 		message?: string;
 	};
 }
 
 export class ApiError extends Error {
 	status?: number;
+	code?: string;
 
-	constructor(message: string, status?: number) {
+	constructor(message: string, status?: number, code?: string) {
 		super(message);
 		this.name = "ApiError";
 		this.status = status;
+		this.code = code;
 	}
 }
 
@@ -75,7 +78,8 @@ async function request<T>(method: string, path: string, body?: RequestBody, opti
 
 	if (!response.ok || !payload.success) {
 		const message = payload.success ? `Request failed with status ${response.status}.` : payload.error?.message;
-		throw new ApiError(message || "Something went wrong. Please try again.", response.status);
+		const code = payload.success ? undefined : payload.error?.code;
+		throw new ApiError(message || "Something went wrong. Please try again.", response.status, code);
 	}
 
 	return payload.data;
