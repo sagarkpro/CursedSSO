@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode localhost --port 7704",
-    "dev:prod": "vite --mode production --port 7704",
+    "dev:prod": "vite --mode prod --port 7704",
     "build": "tsc -b && vite build",
     "build:local": "tsc -b && vite build --mode localhost",
-    "build:prod": "tsc -b && vite build --mode production",
+    "build:prod": "tsc -b && vite build --mode prod",
     "lint": "eslint .",
     "preview": "vite preview"
   },
