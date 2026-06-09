@@ -7,7 +7,7 @@ import { getErrorMessage } from "@/utils/api";
 import { savePendingVerificationEmail } from "@/utils/authStorage";
 import { getFieldErrors, registerSchema } from "@/utils/validation";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 interface RegisterFormValues {
@@ -22,6 +22,8 @@ type RegisterFieldErrors = Partial<Record<keyof RegisterFormValues, string>>;
 
 export default function RegisterPage() {
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const loginId = searchParams.get("login_id");
 	const registerMutation = useRegister();
 	const [form, setForm] = useState<RegisterFormValues>({
 		firstName: "",
@@ -62,7 +64,7 @@ export default function RegisterPage() {
 				onSuccess: ({ email }) => {
 					savePendingVerificationEmail(email);
 					toast.success("Registration successful");
-					navigate("/verify");
+					navigate(loginId ? `/verify?login_id=${loginId}` : "/verify");
 				},
 				onError: (error) => {
 					toast.error(getErrorMessage(error));
@@ -130,7 +132,7 @@ export default function RegisterPage() {
 
 				<p className="text-center text-sm text-neutral-400 mt-4">
 					Already have an account?{" "}
-					<Link to="/login" className="font-medium text-foreground hover:text-rose-300 transition-colors underline decoration-white/20 hover:decoration-rose-300/50 underline-offset-4">
+					<Link to={loginId ? `/login?login_id=${loginId}` : "/login"} className="font-medium text-foreground hover:text-rose-300 transition-colors underline decoration-white/20 hover:decoration-rose-300/50 underline-offset-4">
 						Sign in
 					</Link>
 				</p>

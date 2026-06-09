@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, MailCheck, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -14,6 +14,8 @@ const RESEND_SECONDS = 30;
 
 export default function VerifyPage() {
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const loginId = searchParams.get("login_id");
 	const [email] = useState(() => getPendingVerificationEmail());
 	const [code, setCode] = useState("");
 	const [error, setError] = useState<string | null>(null);
@@ -23,11 +25,9 @@ export default function VerifyPage() {
 
 	useEffect(() => {
 		if (!email) {
-			navigate("/register", {
-				replace: true,
-			});
+			navigate(loginId ? `/register?login_id=${loginId}` : "/register", { replace: true });
 		}
-	}, [email, navigate]);
+	}, [email, navigate, loginId]);
 
 	useEffect(() => {
 		if (secondsLeft <= 0) return;
@@ -59,6 +59,7 @@ export default function VerifyPage() {
 						saveAccessToken(accessToken);
 						clearPendingVerificationEmail();
 						toast.success("OTP verified successfully");
+						navigate(loginId ? `/login?login_id=${loginId}` : "/login", { replace: true });
 					},
 					onError: (mutationError) => {
 						const message = getErrorMessage(mutationError);
@@ -71,7 +72,7 @@ export default function VerifyPage() {
 				},
 			);
 		},
-		[email, verifyOtp],
+		[email, verifyOtp, loginId, navigate],
 	);
 
 	const handleVerify = (event: FormEvent<HTMLFormElement>) => {
@@ -165,7 +166,7 @@ export default function VerifyPage() {
 				<div className="flex items-center justify-center gap-1.5 text-sm text-neutral-400 pt-2">
 					<ArrowLeft className="w-3.5 h-3.5" />
 					<Link
-						to="/register"
+						to={loginId ? `/register?login_id=${loginId}` : "/register"}
 						onClick={clearPendingVerificationEmail}
 						className="font-medium text-foreground hover:text-rose-300 transition-colors underline decoration-white/20 hover:decoration-rose-300/50 underline-offset-4"
 					>

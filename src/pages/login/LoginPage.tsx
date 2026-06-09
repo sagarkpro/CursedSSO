@@ -162,7 +162,7 @@ export default function LoginPage() {
 
 				<p className="text-center text-sm text-neutral-400 mt-4">
 					Don't have an account?{" "}
-					<Link to="/register" className="font-medium text-foreground hover:text-rose-300 transition-colors underline decoration-white/20 hover:decoration-rose-300/50 underline-offset-4">
+					<Link to={loginId ? `/register?login_id=${loginId}` : "/register"} className="font-medium text-foreground hover:text-rose-300 transition-colors underline decoration-white/20 hover:decoration-rose-300/50 underline-offset-4">
 						Create one
 					</Link>
 				</p>
