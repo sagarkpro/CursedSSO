@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { OtpInput } from "@/components/shared/OtpInput";
 import { Button } from "@/components/ui/Button";
 import { useVerifyOtp } from "@/hooks/useVerifyOtp";
+import { useResendOtp } from "@/hooks/useResendOtp";
 import { getErrorMessage } from "@/utils/api";
 import { clearPendingVerificationEmail, getPendingVerificationEmail, saveAccessToken } from "@/utils/authStorage";
 import { otpSchema } from "@/utils/validation";
@@ -22,6 +23,7 @@ export default function VerifyPage() {
 	const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
 	const submittingRef = useRef(false);
 	const { mutate: verifyOtp, isPending } = useVerifyOtp();
+	const { mutate: resendOtp, isPending: isResending } = useResendOtp();
 
 	useEffect(() => {
 		if (!email) {
@@ -81,10 +83,23 @@ export default function VerifyPage() {
 	};
 
 	const handleResend = () => {
-		if (secondsLeft > 0) return;
-		setCode("");
-		setError(null);
-		setSecondsLeft(RESEND_SECONDS);
+		if (secondsLeft > 0 || isResending || !email) return;
+		resendOtp(
+			{ email },
+			{
+				onSuccess: () => {
+					setCode("");
+					setError(null);
+					setSecondsLeft(RESEND_SECONDS);
+					toast.success("OTP resent successfully");
+				},
+				onError: (mutationError) => {
+					const message = getErrorMessage(mutationError);
+					setError(message);
+					toast.error(message);
+				},
+			},
+		);
 	};
 
 	if (!email) {
@@ -152,8 +167,8 @@ export default function VerifyPage() {
 								Resend code in <span className="text-neutral-300 font-mono">{String(secondsLeft).padStart(2, "0")}s</span>
 							</span>
 						) : (
-							<button type="button" onClick={handleResend} className="text-rose-300 hover:text-rose-200 font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 rounded-md px-1">
-								Resend code
+							<button type="button" onClick={handleResend} disabled={isResending} className="text-rose-300 hover:text-rose-200 font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 rounded-md px-1 disabled:opacity-60">
+								{isResending ? "Sending..." : "Resend code"}
 							</button>
 						)}
 					</div>
