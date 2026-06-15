@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { SocialButtons } from "@/components/shared/SocialButtons";
 import { useLogin } from "@/hooks/useLogin";
 import { ApiError, getErrorMessage } from "@/utils/api";
+import { savePendingLoginId } from "@/utils/authStorage";
 import { getFieldErrors, loginSchema } from "@/utils/validation";
 
 const greetings = ["Good to see you again ✦", "Let's get you signed in", "Welcome back to the grid"];
@@ -138,9 +139,9 @@ export default function LoginPage() {
 								<label htmlFor="password" className="text-xs font-medium text-neutral-300">
 									Password
 								</label>
-								<a href="#" className="text-xs font-medium text-rose-300 hover:text-rose-200 transition-colors">
+								<Link to="/reset-password" state={{ email: form.email }} onClick={() => { if (loginId) savePendingLoginId(loginId); }} className="text-xs font-medium text-rose-300 hover:text-rose-200 transition-colors">
 									Forgot password?
-								</a>
+								</Link>
 							</div>
 							<PasswordField
 								id="password"

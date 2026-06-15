@@ -17,11 +17,13 @@ export default function VerifyPage() {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const loginId = searchParams.get("login_id");
+	const otpParam = searchParams.get("otp");
 	const [email] = useState(() => getPendingVerificationEmail());
 	const [code, setCode] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
 	const submittingRef = useRef(false);
+	const hasAutoSubmitted = useRef(false);
 	const { mutate: verifyOtp, isPending } = useVerifyOtp();
 	const { mutate: resendOtp, isPending: isResending } = useResendOtp();
 
@@ -76,6 +78,14 @@ export default function VerifyPage() {
 		},
 		[email, verifyOtp, loginId, navigate],
 	);
+
+	useEffect(() => {
+		if (!email || !otpParam || hasAutoSubmitted.current) return;
+		const upperOtp = otpParam.toUpperCase();
+		setCode(upperOtp);
+		submitCode(upperOtp);
+		hasAutoSubmitted.current = true;
+	}, [email, otpParam, submitCode]);
 
 	const handleVerify = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();

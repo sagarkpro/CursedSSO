@@ -4,6 +4,14 @@ const requiredText = (label: string) => z.string().trim().min(1, `${label} is re
 
 export const emailSchema = z.string().trim().email("Enter a valid email address.");
 
+export const passwordSchema = z
+	.string()
+	.min(8, "Password must contain at least 8 characters.")
+	.regex(/[A-Z]/, "Password must contain an uppercase letter.")
+	.regex(/[a-z]/, "Password must contain a lowercase letter.")
+	.regex(/[0-9]/, "Password must contain a number.")
+	.regex(/[^A-Za-z0-9]/, "Password must contain a special character.");
+
 export const loginSchema = z.object({
 	email: emailSchema,
 	password: z.string().min(1, "Password is required."),
@@ -14,13 +22,15 @@ export const registerSchema = z.object({
 	lastName: requiredText("Last name"),
 	username: requiredText("Username"),
 	email: emailSchema,
-	password: z
-		.string()
-		.min(8, "Password must contain at least 8 characters.")
-		.regex(/[A-Z]/, "Password must contain an uppercase letter.")
-		.regex(/[a-z]/, "Password must contain a lowercase letter.")
-		.regex(/[0-9]/, "Password must contain a number.")
-		.regex(/[^A-Za-z0-9]/, "Password must contain a special character."),
+	password: passwordSchema,
+});
+
+export const resetPasswordRequestSchema = z.object({
+	email: emailSchema,
+});
+
+export const updatePasswordSchema = z.object({
+	password: passwordSchema,
 });
 
 export const otpSchema = z.object({
