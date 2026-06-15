@@ -7,15 +7,15 @@ export function saveAccessToken(accessToken: string) {
 }
 
 export function savePendingVerificationEmail(email: string) {
-	sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, email);
+	localStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, email);
 }
 
 export function getPendingVerificationEmail() {
-	return sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY);
+	return localStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY);
 }
 
 export function clearPendingVerificationEmail() {
-	sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
+	localStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
 }
 
 export function savePendingLoginId(loginId: string) {

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { useVerifyOtp } from "@/hooks/useVerifyOtp";
 import { useResendOtp } from "@/hooks/useResendOtp";
 import { getErrorMessage } from "@/utils/api";
-import { clearPendingVerificationEmail, getPendingVerificationEmail, saveAccessToken } from "@/utils/authStorage";
+import { clearPendingLoginId, clearPendingVerificationEmail, getPendingLoginId, getPendingVerificationEmail, saveAccessToken } from "@/utils/authStorage";
 import { otpSchema } from "@/utils/validation";
 
 const RESEND_SECONDS = 30;
@@ -16,7 +16,8 @@ const RESEND_SECONDS = 30;
 export default function VerifyPage() {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
-	const loginId = searchParams.get("login_id");
+	const urlLoginId = searchParams.get("login_id");
+	const loginId = urlLoginId ?? getPendingLoginId();
 	const otpParam = searchParams.get("otp");
 	const [email] = useState(() => getPendingVerificationEmail());
 	const [code, setCode] = useState("");
@@ -62,6 +63,7 @@ export default function VerifyPage() {
 					onSuccess: ({ accessToken }) => {
 						saveAccessToken(accessToken);
 						clearPendingVerificationEmail();
+						clearPendingLoginId();
 						toast.success("OTP verified successfully");
 						navigate(loginId ? `/login?login_id=${loginId}` : "/login", { replace: true });
 					},
