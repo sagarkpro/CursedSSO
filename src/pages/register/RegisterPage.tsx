@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/Input";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { useRegister } from "@/hooks/useRegister";
 import { getErrorMessage } from "@/utils/api";
-import { savePendingVerificationEmail } from "@/utils/authStorage";
+import { savePendingLoginId, savePendingVerificationEmail } from "@/utils/authStorage";
 import { getFieldErrors, registerSchema } from "@/utils/validation";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -63,6 +63,7 @@ export default function RegisterPage() {
 			{
 				onSuccess: ({ email }) => {
 					savePendingVerificationEmail(email);
+					if (loginId) savePendingLoginId(loginId);
 					toast.success("Registration successful");
 					navigate(loginId ? `/verify?login_id=${loginId}` : "/verify");
 				},
